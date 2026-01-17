@@ -1,0 +1,13 @@
+services:
+  propostaservice:
+    image: ${DOCKER_REGISTRY-}propostaservice
+    build:
+      context: .
+      dockerfile: PropostaService/Dockerfile
+
+  contratacaoservice:
+    image: ${DOCKER_REGISTRY-}contratacaoservice
+    build:
+      context: .
+      dockerfile: ContratacaoService/Dockerfile
+

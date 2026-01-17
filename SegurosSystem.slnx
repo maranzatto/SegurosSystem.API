@@ -1,0 +1,14 @@
+<Solution>
+  <Folder Name="/Itens de Solução/">
+    <File Path=".gitignore" />
+    <File Path="README.md" />
+  </Folder>
+  <Folder Name="/src/">
+    <Project Path="ContratacaoService/ContratacaoService.csproj" />
+    <Project Path="PropostaService/PropostaService.csproj" />
+  </Folder>
+  <Folder Name="/test/" />
+  <Project Path="docker-compose.dcproj">
+    <Build />
+  </Project>
+</Solution>
