@@ -1,4 +1,4 @@
-﻿namespace PropostaService.Infrastructure.Repositories
+﻿namespace PropostaService.Application.Interfaces.Repositories
 {
     public interface IProposalRepository
     {

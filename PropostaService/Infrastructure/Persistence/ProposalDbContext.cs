@@ -1,4 +1,5 @@
 ﻿using Microsoft.EntityFrameworkCore;
+using PropostaService.Domain.ValueObjects;
 
 namespace PropostaService.Infrastructure.Persistence
 {
@@ -23,10 +24,22 @@ namespace PropostaService.Infrastructure.Persistence
                       .HasColumnName("status")
                       .HasConversion<string>();
 
-                entity.Property(x => x.Description).HasColumnName("description");
+                entity.Property(x => x.Description)
+                      .HasColumnName("description")
+                      .HasConversion(
+                          v => v.Value,
+                          v => new ProposalDescription(v)
+                      );
+
+                entity.Property(x => x.RejectionReason)
+                      .HasColumnName("rejection_reason")
+                      .HasConversion(
+                          v => v != null ? v.Value : null,
+                          v => v != null ? new RejectionReason(v) : null
+                      );
+
                 entity.Property(x => x.CreatedAt).HasColumnName("created_at");
                 entity.Property(x => x.UpdatedAt).HasColumnName("updated_at");
-                entity.Property(x => x.RejectionReason).HasColumnName("rejection_reason");
             });
         }
 

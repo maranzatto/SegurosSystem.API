@@ -1,4 +1,5 @@
 ﻿using Microsoft.EntityFrameworkCore;
+using PropostaService.Application.Interfaces.Repositories;
 using PropostaService.Domain.Common;
 using PropostaService.Domain.Exceptions;
 using PropostaService.Infrastructure.Persistence;

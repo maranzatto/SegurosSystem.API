@@ -1,7 +1,9 @@
-﻿namespace PropostaService.Application.DTOs
+﻿using PropostaService.Domain.ValueObjects;
+
+namespace PropostaService.Application.DTOs
 {
     public class CreateProposalRequestDto
     {
-        public string Description { get; set; } = string.Empty;
+        public ProposalDescription Description { get; set; }
     }
 }

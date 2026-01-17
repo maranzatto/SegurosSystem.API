@@ -1,43 +1,53 @@
 ﻿using PropostaService.Domain.Common;
 using PropostaService.Domain.Enums;
-using System.Runtime.InteropServices;
+using PropostaService.Domain.Events;
+using PropostaService.Domain.ValueObjects;
 
-public class Proposal
+public class Proposal : IEntity
 {
     private readonly IClock _clock;
 
     public Guid Id { get; private set; }
     public ProposalStatus Status { get; private set; }
-    public string Description { get; private set; }
+    public ProposalDescription Description { get; private set; }
     public DateTime CreatedAt { get; private set; }
     public DateTime UpdatedAt { get; private set; }
-    public string? RejectionReason { get; private set; }
+    public RejectionReason? RejectionReason { get; private set; }
     public bool IsDeleted { get; private set; } = false;
+
+    private readonly List<IDomainEvent> _domainEvents = new();
+    public IReadOnlyCollection<IDomainEvent> DomainEvents => _domainEvents.AsReadOnly();
+    public void AddDomainEvent(IDomainEvent domainEvent)
+    {
+        _domainEvents.Add(domainEvent);
+    }
+    public void ClearDomainEvents()
+    {
+        _domainEvents.Clear();
+    }
 
     private Proposal()
     {
-        Description = string.Empty;
+        Description = null!;
         _clock = null!;
         IsDeleted = false;
     }
 
-    public Proposal(Guid id, string description, IClock clock, ProposalStatus initialStatus = ProposalStatus.UnderReview)
+    public Proposal(Guid id, ProposalDescription description, IClock clock, ProposalStatus initialStatus = ProposalStatus.UnderReview)
     {
-        if (string.IsNullOrWhiteSpace(description))
-            throw new ArgumentException("Descrição é obrigatória.");
-
         _clock = clock;
         Id = id;
-        Description = description.Trim();
+        Description = description;
         Status = initialStatus;
         CreatedAt = UpdatedAt = _clock.UtcNow;
         IsDeleted = false;
     }
 
-    public static Proposal CreateNew(string description, IClock clock)
+    public static Proposal CreateNew(ProposalDescription description, IClock clock)
     {
         return new Proposal(Guid.NewGuid(), description, clock, ProposalStatus.UnderReview);
     }
+
     public void SetClock(IClock clock)
     {
         if (_clock == null)
@@ -58,9 +68,11 @@ public class Proposal
 
         Status = ProposalStatus.Approved;
         UpdatedAt = _clock.UtcNow;
+
+        AddDomainEvent(new ProposalApprovedEvent(Id, UpdatedAt));
     }
 
-    public void Reject(string reason)
+    public void Reject(RejectionReason reason)
     {
         if (Status != ProposalStatus.UnderReview)
             throw new InvalidOperationException($"Proposta no status {Status} não pode ser rejeitada.");
@@ -68,26 +80,21 @@ public class Proposal
         if (IsDeleted)
             throw new InvalidOperationException("Cannot reject a deleted proposal.");
 
-        if (string.IsNullOrWhiteSpace(reason))
-            throw new ArgumentException("Motivo da rejeição é obrigatório.");
-
         Status = ProposalStatus.Rejected;
-        RejectionReason = reason.Trim();
+        RejectionReason = reason;
         UpdatedAt = _clock.UtcNow;
+
+        AddDomainEvent(new ProposalRejectedEvent(Id, reason.Value, UpdatedAt));
     }
 
-    public void UpdateDescription(string newDescription)
+    public void UpdateDescription(ProposalDescription newDescription)
     {
-        if (string.IsNullOrWhiteSpace(newDescription))
-            throw new ArgumentException("Descrição inválida.");
-
         if (IsDeleted)
             throw new InvalidOperationException("Cannot update a deleted proposal.");
-
         if (Status != ProposalStatus.UnderReview)
             throw new InvalidOperationException("Só pode editar descrição enquanto em análise.");
 
-        Description = newDescription.Trim();
+        Description = newDescription;
         UpdatedAt = _clock.UtcNow;
     }
 
@@ -106,6 +113,7 @@ public class Proposal
             throw new InvalidOperationException("Proposal is not deleted.");
 
         IsDeleted = false;
+        Status = ProposalStatus.UnderReview;
         UpdatedAt = _clock.UtcNow;
     }
 }

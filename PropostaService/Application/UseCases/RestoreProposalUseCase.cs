@@ -1,6 +1,6 @@
 ﻿using PropostaService.Application.Interfaces;
+using PropostaService.Application.Interfaces.Repositories;
 using PropostaService.Domain.Exceptions;
-using PropostaService.Infrastructure.Repositories;
 
 namespace PropostaService.Application.UseCases
 {
