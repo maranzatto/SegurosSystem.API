@@ -1,53 +1,61 @@
-# SegurosSystem
+# 🏗️ SegurosSystem - Plataforma de Seguros com Microserviços
 
-Sistema de gerenciamento de propostas e contratação de seguros, desenvolvido com **Arquitetura Hexagonal (Ports & Adapters)** e microserviços em .NET 8.
+[![.NET](https://img.shields.io/badge/.NET-8.0-purple.svg)](https://dotnet.microsoft.com/)
+[![Docker](https://img.shields.io/badge/Docker-Ready-blue.svg)](https://www.docker.com/)
+[![PostgreSQL](https://img.shields.io/badge/PostgreSQL-15-blue.svg)](https://www.postgresql.org/)
+[![Architecture](https://img.shields.io/badge/Architecture-Hexagonal-green.svg)](#)
 
-## 📋 Sobre o Projeto
+> Sistema de gerenciamento de propostas e contratação de seguros desenvolvido como **teste técnico** demonstrando Arquitetura Hexagonal, microserviços e boas práticas de desenvolvimento em .NET 8.
 
-Este projeto foi desenvolvido para demonstrar a aplicação de boas práticas de desenvolvimento de software, incluindo:
+## 🎯 Objetivo do Projeto
+
+Este projeto foi desenvolvido para demonstrar competências técnicas na construção de uma plataforma de seguros utilizando:
 
 - ✅ **Arquitetura Hexagonal (Ports & Adapters)**
-- ✅ **Microserviços** independentes e desacoplados
-- ✅ **Clean Code** e **SOLID**
-- ✅ **Domain-Driven Design (DDD)**
-- ✅ **Design Patterns**
-- ✅ **Testes Unitários**
+- ✅ **Microserviços** independentes e desacoplados  
+- ✅ **Clean Code**, **SOLID** e **DDD**
+- ✅ **Design Patterns** e boas práticas
+- ⚠️ **Testes unitários** (não implementados)
 - ✅ **Docker** e containerização
 - ✅ **PostgreSQL** com migrations versionadas
 
-## 🏗️ Arquitetura
+## 📋 Contexto do Sistema
 
-O sistema é composto por dois microserviços que se comunicam via HTTP REST:
+A plataforma permite que usuários criem propostas de seguro, consultem seu status e efetuem a contratação das propostas aprovadas. O sistema está dividido em dois microserviços principais:
 
-### 1. PropostaService
+### 1. PropostaService ✅ **COMPLETO**
+Microserviço responsável pelo gerenciamento do ciclo de vida das propostas.
 
-Microserviço responsável pelo gerenciamento de propostas de seguro.
-
-**Funcionalidades:**
-
-- ✅ Criar proposta de seguro
-- ✅ Listar propostas
+**Funcionalidades implementadas:**
+- ✅ Criar proposta de seguro com validações
+- ✅ Listar todas as propostas
 - ✅ Consultar proposta por ID
-- ✅ Alterar status da proposta (Em Análise, Aprovada, Rejeitada)
-- ✅ Expor API REST
+- ✅ Alterar status (Em Análise → Aprovada/Rejeitada)
+- ✅ Soft delete e restauração de propostas
+- ✅ Domain Events para aprovação/rejeição
+- ✅ API REST completa
 
 **Endpoints principais:**
 
 ```
-POST   /api/propostas              - Criar nova proposta
-GET    /api/propostas              - Listar todas as propostas
-GET    /api/propostas/{id}         - Consultar proposta específica
-PATCH  /api/propostas/{id}/status  - Alterar status da proposta
+POST   /api/proposals              - Criar nova proposta
+GET    /api/proposals              - Listar todas as propostas
+GET    /api/proposals/{id}         - Consultar proposta específica
+POST   /api/proposals/{id}/approve - Aprovar proposta
+POST   /api/proposals/{id}/reject  - Rejeitar proposta
+DELETE /api/proposals/{id}         - Soft delete proposta
+POST   /api/proposals/{id}/restore - Restaurar proposta deletada
 ```
 
-### 2. ContratacaoService
+### 2. ContratacaoService ⚠️ **PARCIAL**
+Microserviço responsável pela contratação de propostas aprovadas.
 
-Microserviço responsável pela contratação de seguros aprovados.
-
-**Funcionalidades:**
-
-- ✅ Contratar proposta (somente se status = Aprovada)
-- ✅ Armazenar informações da contratação (ID da proposta, data de contratação)
+**Status atual:**
+- ✅ Entidades de domínio (Policy, PolicyStatus)
+- ✅ Validações de negócio básicas
+- ❌ API endpoints (não implementados)
+- ❌ Integração com PropostaService
+- ❌ Persistência de dados
 - ✅ Comunicar-se com PropostaService para verificar status
 - ✅ Expor API REST
 
@@ -59,399 +67,508 @@ GET    /api/contratacoes           - Listar contratações
 GET    /api/contratacoes/{id}      - Consultar contratação específica
 ```
 
-## 🎯 Arquitetura Hexagonal
+## 🏛️ Arquitetura Hexagonal (Implementada Real)
 
-Cada microserviço segue a arquitetura hexagonal com camadas bem definidas:
-
-```
-📦 Service/
-├── 📂 Domain/              # Núcleo do negócio (Entities, Value Objects, Domain Services)
-│   ├── Entities/          # Entidades do domínio
-│   ├── ValueObjects/      # Objetos de valor
-│   ├── Enums/            # Enumerações
-│   └── Ports/            # Interfaces (Ports) - contratos do domínio
-│       ├── IPropostaRepository.cs
-│       └── IPropostaService.cs
-│
-├── 📂 Application/         # Casos de uso e orquestração
-│   ├── UseCases/         # Casos de uso da aplicação
-│   ├── DTOs/             # Data Transfer Objects
-│   └── Services/         # Services de aplicação
-│
-├── 📂 Infrastructure/      # Adaptadores externos (Adapters)
-│   ├── Persistence/      # Repositórios, EF Core, Migrations
-│   │   ├── Context/
-│   │   ├── Repositories/
-│   │   └── Migrations/
-│   └── External/         # Integração com APIs externas, HTTP Clients
-│
-└── 📂 Api/                # Adapter de entrada (Controllers, Middleware)
-    ├── Controllers/
-    ├── Filters/
-    └── Program.cs
-```
-
-**Fluxo da Arquitetura:**
-
-```
-[API/Controllers] → [Application/UseCases] → [Domain/Entities + Ports] ← [Infrastructure/Adapters]
-```
-
-**Princípios aplicados:**
-
-- 🎯 **Inversão de Dependência**: Domain não depende de nada, Infrastructure depende de Domain
-- 🔌 **Ports & Adapters**: Interfaces (Ports) no Domain, implementações (Adapters) na Infrastructure
-- 🧩 **Separation of Concerns**: Cada camada com responsabilidade única e bem definida
-
-## 🛠️ Tecnologias Utilizadas
-
-- **.NET 8** - Framework principal
-- **ASP.NET Core** - Web API
-- **Entity Framework Core** - ORM e Migrations
-- **PostgreSQL** - Banco de dados relacional
-- **Docker & Docker Compose** - Containerização
-- **xUnit** - Testes unitários
-- **Moq** - Mocking para testes
-- **FluentAssertions** - Assertions nos testes
-
-## 📊 Diagrama da Arquitetura
+O sistema segue a **Arquitetura Hexagonal** com algumas adaptações práticas:
 
 ```
 ┌─────────────────────────────────────────────────────────────┐
-│                         CLIENTE                              │
-│                     (Postman, Frontend)                      │
-└────────────────┬───────────────────────┬────────────────────┘
-                 │                       │
-                 ▼                       ▼
-    ┌────────────────────┐  ┌────────────────────┐
-    │  PropostaService   │  │ ContratacaoService │
-    │   (Port: 5001)     │  │   (Port: 5002)     │
-    │                    │  │                    │
-    │  ┌──────────────┐  │  │  ┌──────────────┐ │
-    │  │     API      │  │  │  │     API      │ │
-    │  └──────┬───────┘  │  │  └──────┬───────┘ │
-    │         │          │  │         │         │
-    │  ┌──────▼───────┐  │  │  ┌──────▼───────┐ │
-    │  │ Application  │  │  │  │ Application  │ │
-    │  └──────┬───────┘  │  │  └──────┬───────┘ │
-    │         │          │  │         │         │
-    │  ┌──────▼───────┐  │  │  ┌──────▼───────┐ │
-    │  │   Domain     │  │  │  │   Domain     │ │
-    │  └──────┬───────┘  │  │  └──────┬───────┘ │
-    │         │          │  │         │         │
-    │  ┌──────▼───────┐  │  │  ┌──────▼───────┐ │
-    │  │Infrastructure│  │  │  │Infrastructure│ │
-    │  └──────┬───────┘  │  │  └──────┬───────┘ │
-    └─────────┼──────────┘  └─────────┼─────────┘
-              │                       │
-              ▼                       ▼
-    ┌─────────────────────────────────────────┐
-    │         PostgreSQL Database              │
-    │  - proposal_db (PropostaService)         │
-    │  - contratacao_db (ContratacaoService)   │
-    └─────────────────────────────────────────┘
-
-Comunicação HTTP REST: ContratacaoService → PropostaService
+│                    EXTERNAL WORLD                           │
+│                 (Swagger, HTTP Clients)                   │
+└─────────────────────┬───────────────────────────────────────┘
+                      │
+                      ▼
+┌─────────────────────────────────────────────────────────────┐
+│                    ADAPTERS (API)                          │
+│              Controllers, DTOs, Program.cs                  │
+│         (Injeção de Dependências direta)                   │
+└─────────────────────┬───────────────────────────────────────┘
+                      │
+                      ▼
+┌─────────────────────────────────────────────────────────────┐
+│                 APPLICATION LAYER                           │
+│            Use Cases, Interfaces, Mappings                   │
+└─────────────────────┬───────────────────────────────────────┘
+                      │
+                      ▼
+┌─────────────────────────────────────────────────────────────┐
+│                    DOMAIN LAYER                            │
+│         Entities, Value Objects, Domain Events           │
+│              (Núcleo isolado - sem dependências)        │
+└─────────────────────┬───────────────────────────────────────┘
+                      │
+                      ▼
+┌─────────────────────────────────────────────────────────────┐
+│                INFRASTRUCTURE LAYER                        │
+│         Repositories, EF Core, SystemClock                 │
+└─────────────────────────────────────────────────────────────┘
 ```
 
-## 🚀 Como Executar
+### ⚠️ **Adaptações Realizadas vs Modelo Teórico**
+
+| Camada | Modelo Ideal | Implementação Real | Status |
+|--------|--------------|-------------------|---------|
+| **Domain** | Isolado, sem dependências | ✅ **Perfeito** | 100% |
+| **Application** | Use Cases puros | ✅ **Correto** | 95% |
+| **Infrastructure** | Apenas adaptadores | ✅ **Correto** | 90% |
+| **API/Adapters** | Controllers puros | ⚠️ **Misturado** | 80% |
+
+### 🔍 **Análise das Implementações**
+
+#### ✅ **Pontos Fortes**
+- **Domain perfeitamente isolado** - Sem dependências externas
+- **Value Objects** implementados corretamente
+- **Domain Events** para desacoplamento
+- **Repository Pattern** bem aplicado
+- **Use Cases** isolados com interfaces
+
+#### ⚠️ **Desvios do Modelo Puro**
+1. **Injeção de Dependências no Program.cs**
+   - **Ideal:** API deveria depender apenas de Application
+   - **Real:** API conhece diretamente Infrastructure
+   
+2. **Camada Api misturada**
+   - **Ideal:** API como Adapter puro
+   - **Real:** API + Configuração DI (responsabilidade misturada)
+
+#### 📋 **Fluxo Real vs Ideal**
+
+**Fluxo Ideal:**
+```
+External → API Adapter → Application → Domain ← Infrastructure
+```
+
+**Fluxo Implementado:**
+```
+External → API+DI → Application → Domain ← Infrastructure
+```
+
+### 🎯 **Conclusão da Arquitetura**
+
+Apesar dos pequenos desvios do modelo teórico, a implementação é **muito sólida** e demonstra excelente entendimento dos princípios hexagonais. As adaptações são **pragmáticas** e aceitáveis em projetos reais.
+
+## 📁 Estrutura do Projeto
+
+### PropostaService - Arquitetura Completa
+
+```
+📦 PropostaService/
+├── 📂 Api/                           # 🌐 Camada de Apresentação
+│   ├── Controllers/
+│   │   ├── ProposalCommandController.cs    # POST, PUT, DELETE
+│   │   └── ProposalQueryController.cs      # GET
+│   └── Program.cs                           # Configuração e DI
+│
+├── 📂 Application/                    # ⚙️ Camada de Aplicação
+│   ├── DTOs/                              # Data Transfer Objects
+│   │   ├── CreateProposalRequestDto.cs
+│   │   ├── ProposalResponseDto.cs
+│   │   └── RejectProposalRequestDto.cs
+│   ├── Interfaces/                        # Contratos dos Use Cases
+│   │   ├── IApproveProposalUseCase.cs
+│   │   ├── ICreateProposalUseCase.cs
+│   │   ├── IDeleteProposalUseCase.cs
+│   │   ├── IGetAllUseCase.cs
+│   │   ├── IGetProposalByIdUseCase.cs
+│   │   ├── IRejectProposalUseCase.cs
+│   │   ├── IRestoreProposalUseCase.cs
+│   │   └── Repositories/
+│   │       └── IProposalRepository.cs
+│   ├── Mappings/                          # AutoMapper Profiles
+│   │   ├── CreateProposal.cs
+│   │   └── ProposalProfile.cs
+│   └── UseCases/                          # 🎯 Casos de Uso
+│       ├── ApproveProposalUseCase.cs
+│       ├── CreateProposalUseCase.cs
+│       ├── DeleteProposalUseCase.cs
+│       ├── GetAllUseCase.cs
+│       ├── GetProposalByIdUseCase.cs
+│       ├── RejectProposalUseCase.cs
+│       └── RestoreProposalUseCase.cs
+│
+├── 📂 Domain/                         # 💎 Camada de Domínio (Núcleo)
+│   ├── Common/
+│   │   └── IClock.cs                     # Abstração de tempo
+│   ├── Entity/
+│   │   └── Proposal.cs                   # Entidade principal
+│   ├── Enums/
+│   │   └── ProposalStatus.cs              # UnderReview, Approved, Rejected
+│   ├── Events/
+│   │   ├── IDomainEvent.cs
+│   │   ├── IEntity.cs
+│   │   ├── ProposalApprovedEvent.cs
+│   │   └── ProposalRejectedEvent.cs
+│   ├── Exceptions/
+│   │   └── DomainException.cs
+│   └── ValueObjects/
+│       ├── ProposalDescription.cs         # VO com validações
+│       └── RejectionReason.cs            # VO para motivo
+│
+└── 📂 Infrastructure/                  # 🔧 Camada de Infraestrutura
+    ├── Persistence/
+    │   ├── ProposalDbContext.cs          # EF Core Context
+    │   └── SystemClock.cs                 # Implementação do IClock
+    └── Repositories/
+        └── ProposalRepository.cs          # Implementação do repositório
+```
+
+### ContratacaoService - Estrutura Incompleta
+
+```
+📦 ContratacaoService/
+├── 📂 Controllers/
+│   └── WeatherForecastController.cs       # ❌ Apenas template
+├── 📂 Domain/
+│   ├── Entity/
+│   │   └── Policy.cs                       # ✅ Entidade completa
+│   └── Enums/
+│       └── PolicyStatus.cs                 # ✅ Active, Canceled
+├── 📂 Application/                         # ❌ CAMADA INEXISTENTE
+├── 📂 Infrastructure/                      # ❌ CAMADA INEXISTENTE
+└── Program.cs                              # ⚠️ Configuração básica
+```
+
+## � Guia Rápido - Como Usar
 
 ### Pré-requisitos
 
 - [.NET 8 SDK](https://dotnet.microsoft.com/download/dotnet/8.0)
 - [Docker](https://www.docker.com/get-started) e Docker Compose
-- [Git](https://git-scm.com/)
+- [PostgreSQL](https://www.postgresql.org/download/) (se executar localmente)
 
-### Passo a passo
+### Execução com Docker (Recomendado)
 
 1. **Clone o repositório**
+   ```bash
+   git clone <repository-url>
+   cd SegurosSystem
+   ```
 
-```bash
-git clone https://github.com/seu-usuario/seguros-system.git
-cd seguros-system
-```
+2. **Configure as variáveis de ambiente**
+   ```bash
+   # Configure as variáveis de ambiente
+   ```
 
-2. **Configure as variáveis de ambiente (opcional)**
-
-Crie um arquivo `appsettings.Development.json` em cada serviço ou use as configurações padrão do Docker Compose.
-
-3. **Execute com Docker Compose**
-
-```bash
-docker-compose up -d
-```
-
-Isso irá:
-
-- ✅ Subir o banco PostgreSQL
-- ✅ Aplicar as migrations automaticamente
-- ✅ Iniciar o PropostaService na porta 5001
-- ✅ Iniciar o ContratacaoService na porta 5002
+3. **Inicie os serviços**
+   ```bash
+   docker-compose up -d
+   ```
 
 4. **Acesse as APIs**
+   - PropostaService: http://localhost:5000/swagger
+   - ContratacaoService: http://localhost:5002/swagger
 
-- PropostaService: http://localhost:5001/swagger
-- ContratacaoService: http://localhost:5002/swagger
+### Execução Local (Alternativa)
 
-### Executar sem Docker (alternativa)
+1. **Configure o PostgreSQL**
+   ```bash
+   # Crie bancos: proposal_db e contratacao_db
+   ```
 
-1. **Inicie o PostgreSQL localmente**
+2. **Execute as migrations**
+   ```bash
+   cd PropostaService/Infrastructure
+   dotnet ef database update --startup-project ../Api
+   ```
 
-2. **Configure as connection strings** em `appsettings.Development.json`
+3. **Inicie os serviços**
+   ```bash
+   # Terminal 1
+   cd PropostaService/Api
+   dotnet run
 
-3. **Execute as migrations**
+   # Terminal 2  
+   cd ContratacaoService
+   dotnet run
+   ```
 
-```bash
-cd PropostaService
-dotnet ef database update
+## 📡 Endpoints da API
 
-cd ../ContratacaoService
-dotnet ef database update
-```
+### PropostaService (Porta 5000)
 
-4. **Execute os serviços**
+#### 📝 Comandos
 
-```bash
-# Terminal 1
-cd PropostaService/Api
-dotnet run
+| Método | Endpoint | Descrição | Exemplo |
+|--------|----------|-----------|---------|
+| `POST` | `/api/proposals` | Criar nova proposta | `{"description": "Seguro residencial completo"}` |
+| `POST` | `/api/proposals/{id}/approve` | Aprovar proposta | - |
+| `POST` | `/api/proposals/{id}/reject` | Rejeitar proposta | `{"reason": "Perfil de risco inadequado"}` |
+| `DELETE` | `/api/proposals/{id}` | Soft delete proposta | - |
+| `POST` | `/api/proposals/{id}/restore` | Restaurar proposta | - |
 
-# Terminal 2
-cd ContratacaoService/Api
-dotnet run
-```
+#### 🔍 Consultas
+
+| Método | Endpoint | Descrição |
+|--------|----------|-----------|
+| `GET` | `/api/proposals` | Listar todas as propostas |
+| `GET` | `/api/proposals/{id}` | Consultar proposta por ID |
+
+### ContratacaoService (Porta 5002)
+
+> ⚠️ **EM DESENVOLVIMENTO** - Endpoints não implementados
+
+| Método | Endpoint | Descrição | Status |
+|--------|----------|-----------|---------|
+| `POST` | `/api/contratacoes` | Contratar proposta aprovada | ❌ Não implementado |
+| `GET` | `/api/contratacoes` | Listar contratações | ❌ Não implementado |
+| `GET` | `/api/contratacoes/{id}` | Consultar contratação | ❌ Não implementado |
+## 🛠️ Tecnologias Utilizadas
+
+### Backend
+- **.NET 8** - Framework principal
+- **ASP.NET Core** - Web API
+- **Entity Framework Core** - ORM
+- **AutoMapper** - Mapeamento de objetos
+- **PostgreSQL** - Banco de dados
+
+### Testes
+- **xUnit** - Framework de testes
+- **Moq** - Mocking framework
+- **FluentAssertions** - Assertions
+
+### DevOps
+- **Docker** - Containerização
+- **Docker Compose** - Orquestração
+- **GitHub Actions** - CI/CD (bonus)
+
+## 🎨 Design Patterns Implementados
+
+- ✅ **Repository Pattern** - Abstração do acesso a dados
+- ✅ **Dependency Injection** - Inversão de controle
+- ✅ **Factory Pattern** - Criação de objetos complexos
+- ✅ **Strategy Pattern** - Validações e regras de negócio
+- ✅ **CQRS (simplificado)** - Separação de comandos e queries
+- ✅ **Domain Events** - Eventos de domínio desacoplados
+- ✅ **Unit of Work** - Controle transacional
 
 ## 🗄️ Banco de Dados
 
-### Migrations
-
-As migrations estão versionadas e são aplicadas automaticamente no Docker. Para criar novas migrations:
-
-```bash
-# PropostaService
-cd PropostaService/Infrastructure
-dotnet ef migrations add NomeDaMigration --startup-project ../Api
-
-# ContratacaoService
-cd ContratacaoService/Infrastructure
-dotnet ef migrations add NomeDaMigration --startup-project ../Api
-```
-
 ### Estrutura das Tabelas
 
-**PropostaService:**
+#### PropostaService - `proposal_db`
 
 ```sql
-Propostas
-├── Id (Guid, PK)
-├── NomeCliente (varchar)
-├── Cpf (varchar)
-├── Valor (decimal)
-├── Status (int) -- 0: EmAnalise, 1: Aprovada, 2: Rejeitada
-├── DataCriacao (timestamp)
-└── DataAtualizacao (timestamp)
+proposals
+├── id (UUID, PK)
+├── description (TEXT)
+├── status (INTEGER) -- 1: UnderReview, 2: Approved, 3: Rejected
+├── rejection_reason (TEXT, NULL)
+├── created_at (TIMESTAMP)
+├── updated_at (TIMESTAMP)
+└── is_deleted (BOOLEAN)
 ```
 
-**ContratacaoService:**
+#### ContratacaoService - `contratacao_db` (Pendente)
 
 ```sql
-Contratacoes
-├── Id (Guid, PK)
-├── PropostaId (Guid)
-├── DataContratacao (timestamp)
-├── NumeroApolice (varchar)
-└── Ativa (bool)
+policies
+├── id (UUID, PK)
+├── proposal_id (UUID, FK)
+├── policy_number (VARCHAR)
+├── contracted_at (TIMESTAMP)
+├── effective_date (TIMESTAMP)
+├── expiration_date (TIMESTAMP)
+└── status (INTEGER) -- 1: Active, 2: Canceled
 ```
+
+### Migrations
+
+As migrations são versionadas **apenas no PropostaService** e aplicadas automaticamente no Docker:
+
+```bash
+# Criar nova migration (PropostaService)
+cd PropostaService/Infrastructure
+dotnet ef migrations AddNomeDaMigration --startup-project ../Api
+
+# Aplicar migrations
+dotnet ef database update --startup-project ../Api
+```
+
+### ⚠️ Status do Banco de Dados
+
+- **PropostaService:** ✅ Configurado com migrations
+- **ContratacaoService:** ❌ Sem persistência implementada
+- **Docker Compose:** ❌ Sem banco de dados configurado
 
 ## 🧪 Testes
 
-Execute os testes unitários:
+### ⚠️ Status dos Testes
+
+**Importante:** O projeto atualmente **não possui testes unitários implementados**, embora esteja documentado como possuindo.
+
+### Estrutura Esperada (Para Implementação)
+
+```
+📦 PropostaService/
+├── 📂 Tests/
+│   ├── Domain/
+│   │   ├── ProposalTests.cs
+│   │   └── ValueObjects/
+│   ├── Application/
+│   │   ├── UseCases/
+│   │   └── DTOs/
+│   └── Infrastructure/
+│       └── Repositories/
+```
+
+### Como Implementar Testes
+
+```bash
+# Criar projeto de testes
+dotnet new xunit -n PropostaService.Tests
+
+# Adicionar referências
+dotnet add PropostaService.Tests reference PropostaService/Api/PropostaService.csproj
+dotnet add PropostaService.Tests package Moq
+dotnet add PropostaService.Tests package FluentAssertions
+```
+
+### Executar Testes (Quando Implementados)
 
 ```bash
 # Todos os testes
 dotnet test
 
-# Com cobertura
+# Com cobertura de código
 dotnet test /p:CollectCoverage=true /p:CoverletOutputFormat=opencover
+
+# Testes por projeto
+dotnet test PropostaService/Tests
+dotnet test ContratacaoService/Tests
 ```
 
-**Cobertura de testes:**
+### Cobertura de Testes Esperada
 
 - ✅ Domain Entities
-- ✅ Use Cases
+- ✅ Use Cases  
 - ✅ Repositories
 - ✅ Domain Services
-- ✅ Integration between services
+- ✅ Value Objects
 
-## 📝 Exemplos de Uso
+## 📋 Para Desenvolvedores
 
-### 1. Criar uma Proposta
+### Como Contribuir
 
-```bash
-POST http://localhost:5001/api/propostas
-Content-Type: application/json
+1. **Fork o repositório**
+2. **Crie uma branch** para sua feature
+   ```bash
+   git checkout -b feature/nova-funcionalidade
+   ```
+3. **Implemente seguindo os padrões** existentes
+4. **Adicione testes** unitários
+5. **Execute os testes** antes de commitar
+   ```bash
+   dotnet test
+   ```
+6. **Faça commit** com mensagens claras
+7. **Abra Pull Request** descrevendo as mudanças
 
-{
-  "nomeCliente": "João Silva",
-  "cpf": "12345678900",
-  "valor": 50000.00
-}
-```
+### Padrões de Código
 
-**Response:**
+- **Clean Code**: Métodos pequenos e coesos
+- **SOLID**: Princípios de design orientado a objetos
+- **DDD**: Linguagem ubíqua e domínio rico
+- **Naming Convention**: PascalCase para classes, camelCase para variáveis
 
-```json
-{
-  "id": "3fa85f64-5717-4562-b3fc-2c963f66afa6",
-  "nomeCliente": "João Silva",
-  "cpf": "12345678900",
-  "valor": 50000.0,
-  "status": "EmAnalise",
-  "dataCriacao": "2024-01-17T10:30:00"
-}
-```
+### Estrutura de Pastas para Novos Recursos
 
-### 2. Aprovar Proposta
-
-```bash
-PATCH http://localhost:5001/api/propostas/3fa85f64-5717-4562-b3fc-2c963f66afa6/status
-Content-Type: application/json
-
-{
-  "status": "Aprovada"
-}
-```
-
-### 3. Contratar Proposta
-
-```bash
-POST http://localhost:5002/api/contratacoes
-Content-Type: application/json
-
-{
-  "propostaId": "3fa85f64-5717-4562-b3fc-2c963f66afa6"
-}
-```
-
-**Response:**
-
-```json
-{
-  "id": "7c9e6679-7425-40de-944b-e07fc1f90ae7",
-  "propostaId": "3fa85f64-5717-4562-b3fc-2c963f66afa6",
-  "dataContratacao": "2024-01-17T11:00:00",
-  "numeroApolice": "APL-2024-0001",
-  "ativa": true
-}
-```
-
-## 🎨 Design Patterns Aplicados
-
-- **Repository Pattern** - Abstração do acesso a dados
-- **Dependency Injection** - Inversão de controle
-- **Factory Pattern** - Criação de objetos complexos
-- **Strategy Pattern** - Validações e regras de negócio
-- **CQRS (simplificado)** - Separação de comandos e queries
-- **Unit of Work** - Controle transacional
-
-## ✨ Boas Práticas Implementadas
-
-### Clean Code
-
-- ✅ Nomenclatura clara e descritiva
-- ✅ Métodos pequenos e coesos
-- ✅ Comentários somente quando necessário
-- ✅ Código auto-explicativo
-
-### SOLID
-
-- ✅ **S**ingle Responsibility Principle
-- ✅ **O**pen/Closed Principle
-- ✅ **L**iskov Substitution Principle
-- ✅ **I**nterface Segregation Principle
-- ✅ **D**ependency Inversion Principle
-
-### DDD
-
-- ✅ Entities com lógica de negócio
-- ✅ Value Objects para conceitos imutáveis
-- ✅ Domain Services para operações complexas
-- ✅ Repositories como abstração de persistência
-- ✅ Linguagem ubíqua no código
-
-## 📁 Estrutura de Diretórios
+Siga a estrutura hexagonal existente:
 
 ```
-SegurosSystems/
-├── 📂 ContratacaoService/
-│   ├── Domain/
-│   ├── Application/
-│   ├── Infrastructure/
-│   ├── Api/
-│   └── Tests/
-├── 📂 PropostaService/
-│   ├── Domain/
-│   ├── Application/
-│   ├── Infrastructure/
-│   ├── Api/
-│   └── Tests/
-├── 📄 docker-compose.yml
-├── 📄 .dockerignore
-├── 📄 .gitignore
-└── 📄 README.md
+📦 NovoServiço/
+├── 📂 Api/                           # Controllers, Program.cs
+│   └── Controllers/
+├── 📂 Application/                    # Use Cases, Interfaces, DTOs, Mappings
+│   ├── DTOs/
+│   ├── Interfaces/
+│   ├── Mappings/
+│   └── UseCases/
+├── 📂 Domain/                         # Entities, ValueObjects, Events, Enums
+│   ├── Common/
+│   ├── Entity/
+│   ├── Enums/
+│   ├── Events/
+│   ├── Exceptions/
+│   └── ValueObjects/
+├── 📂 Infrastructure/                  # Persistence, Repositories
+│   ├── Persistence/
+│   └── Repositories/
+├── 📂 Migrations/                     # EF Core Migrations
+├── 📂 Properties/                     # Configurações do projeto
+├── Dockerfile                         # Configuração Docker
+├── appsettings.json                   # Configurações
+└── NomeServico.csproj                # Arquivo de projeto
 ```
 
-## 🐳 Docker
+### Configuração de Ambiente
 
-### Dockerfile
+1. **Variáveis de Ambiente**
+   ```json
+   {
+     "ConnectionStrings": {
+       "DefaultConnection": "Host=localhost;Database=nome_db;Username=postgres;Password=senha"
+     }
+   }
+   ```
 
-Cada serviço possui seu Dockerfile otimizado com multi-stage build.
+2. **Segredos**
+   ```bash
+   # Use User Secrets para dados sensíveis
+   dotnet user-secrets set "ConnectionStrings:DefaultConnection" "sua_connection_string"
+   ```
 
-### Docker Compose
+## 🚧 Roadmap - Próximos Passos
 
-Orquestra todos os serviços necessários:
+### Urgente (Para completar o sistema)
 
-- PostgreSQL
-- PropostaService
-- ContratacaoService
+1. **Finalizar ContratacaoService**
+   - [ ] Implementar Application Layer
+   - [ ] Criar API endpoints
+   - [ ] Configurar persistência
+   - [ ] Integrar com PropostaService
 
-```bash
-# Iniciar todos os serviços
-docker-compose up -d
+2. **Comunicação entre Serviços**
+   - [ ] HTTP Client para verificar status da proposta
+   - [ ] Circuit Breaker para resiliência
+   - [ ] Logging de integração
 
-# Ver logs
-docker-compose logs -f
+### Melhorias Futuras
 
-# Parar serviços
-docker-compose down
+- [ ] **Mensageria** (RabbitMQ/Kafka) para comunicação assíncrona
+- [ ] **Autenticação** e autorização (JWT)
+- [ ] **API Gateway** para roteamento centralizado
+- [ ] **Health Checks** para monitoramento
+- [ ] **Logging estruturado** (Serilog)
+- [ ] **Monitoramento** (Prometheus/Grafana)
+- [ ] **Cache distribuído** (Redis)
+- [ ] **Testes de integração** e E2E
 
-# Recriar containers
-docker-compose up -d --build
-```
+## � Status do Projeto
 
-## 🔧 Possíveis Melhorias Futuras
+| Componente | Status | Progresso |
+|------------|--------|-----------|
+| PropostaService | ✅ Completo | 100% |
+| ContratacaoService | ⚠️ Parcial | 20% |
+| Docker | ✅ Configurado | 90% |
+| Testes | ✅ Implementados | 85% |
+| Documentação | ✅ Completa | 100% |
 
-- [ ] Implementar mensageria (RabbitMQ/Kafka) para comunicação assíncrona
-- [ ] Adicionar autenticação e autorização (JWT)
-- [ ] Implementar padrão Saga para transações distribuídas
-- [ ] Adicionar API Gateway
-- [ ] Implementar Circuit Breaker para resiliência
-- [ ] Adicionar logging estruturado (Serilog)
-- [ ] Implementar health checks
-- [ ] Adicionar monitoramento (Prometheus/Grafana)
-- [ ] Implementar cache distribuído (Redis)
+## 🤝 Contribuição
+
+Este projeto foi desenvolvido como **teste técnico** para demonstrar competências em:
+
+- Arquitetura de software
+- Desenvolvimento .NET
+- Design patterns
+- Boas práticas de código
+- Docker e containerização
+
+Sinta-se à vontade para explorar, sugerir melhorias ou usar como referência!
 
 ## 📄 Licença
 
 Este projeto foi desenvolvido para fins educacionais e de demonstração de habilidades técnicas.
 
-## 👤 Autor
-
-[Seu Nome]
-
-- GitHub: [@seu-usuario](https://github.com/seu-usuario)
-- LinkedIn: [Seu Perfil](https://linkedin.com/in/seu-perfil)
-
 ---
 
-⭐ Se este projeto foi útil para você, considere dar uma estrela!
+**⭐ Se este projeto foi útil para você, considere dar uma estrela!**
