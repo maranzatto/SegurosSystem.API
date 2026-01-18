@@ -37,7 +37,7 @@ namespace PropostaService.Infrastructure.Repositories
 
         public async Task<IEnumerable<Proposal>> GetAllAsync()
         {
-            return await _context.Proposals.Where(p => !p.IsDeleted).AsNoTracking().ToListAsync();
+            return await _context.Proposals.Where(p => !p.IsDeleted).OrderBy(p => p.Description).AsNoTracking().ToListAsync();
         }
 
         public async Task UpdateAsync(Proposal proposal)

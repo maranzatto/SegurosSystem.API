@@ -1,65 +1,85 @@
-﻿using System;
-using ContratacaoService.Domain.Enums; // Crie um enum PolicyStatus aqui, se não existir
+﻿using ContratacaoService.Domain.Enums;
+using ContratacaoService.Domain.Common;
+using ContratacaoService.Domain.Events;
+using ContratacaoService.Domain.Exceptions;
+using System;
+using System.Runtime.InteropServices;
+using ContratacaoService.Domain.ValueObjects;
 
 namespace ContratacaoService.Domain.Entities
 {
-    public class Policy
+    public class Policy : IEntity
     {
+        private readonly IClock _clock;
+
         public Guid Id { get; private set; }
-        public Guid ProposalId { get; private set; }          // Referência obrigatória à proposta aprovada
-        public string PolicyNumber { get; private set; }      // Número da apólice (gerado, único)
-        public DateTime ContractedAt { get; private set; }    // Data da contratação
-        public DateTime? EffectiveDate { get; private set; }  // Início da vigência (pode ser futura)
-        public DateTime? ExpirationDate { get; private set; } // Fim da vigência
-        public PolicyStatus Status { get; private set; }      // Ativa, Cancelada, etc.
+        public Guid ProposalId { get; private set; }
+        public PolicyNumber PolicyNumber { get; private set; }
+        public PolicyPeriod Period { get; private set; }
+        public DateTime ContractedAt { get; private set; }
+        public PolicyStatus Status { get; private set; }
+        public bool IsDeleted { get; private set; }
 
-        // Campos comuns em apólices de seguro (adicione conforme seu domínio)
-        // public decimal TotalPremium { get; private set; }          // Prêmio total
-        // public string InsuredName { get; private set; }            // Nome do segurado
-        // public string InsuredCpfCnpj { get; private set; }         // CPF/CNPJ
-        // public IReadOnlyCollection<Coverage> Coverages { get; private set; } = new List<Coverage>(); // Coberturas
-
-        // Construtor principal (usado quando contrata a partir de uma proposta aprovada)
-        public Policy(Guid proposalId, DateTime? effectiveDate = null)
+        private readonly List<IDomainEvent> _domainEvents = new();
+        public IReadOnlyCollection<IDomainEvent> DomainEvents => _domainEvents.AsReadOnly();
+        public void AddDomainEvent(IDomainEvent domainEvent)
         {
-            if (proposalId == Guid.Empty)
-                throw new ArgumentException("ID da proposta é obrigatório para contratar.", nameof(proposalId));
-
-            Id = Guid.NewGuid();
-            ProposalId = proposalId;
-            PolicyNumber = GeneratePolicyNumber(); // Lógica de geração (veja abaixo)
-            ContractedAt = DateTime.UtcNow;
-            EffectiveDate = effectiveDate ?? ContractedAt; // Default: vigência imediata
-            ExpirationDate = EffectiveDate.Value.AddYears(1); // Exemplo: 1 ano de vigência (ajuste conforme regras)
-            Status = PolicyStatus.Active;
-
-            // Validações adicionais se precisar (ex: vigência futura não pode ser no passado)
-            if (EffectiveDate < DateTime.UtcNow.Date)
-                throw new ArgumentException("Data de início de vigência não pode ser no passado.");
+            _domainEvents.Add(domainEvent);
+        }
+        public void ClearDomainEvents()
+        {
+            _domainEvents.Clear();
         }
 
-        // Método para cancelar (exemplo de comportamento)
-        public void Cancel(string? reason = null)
+        private Policy()
+        {
+            _clock = null!;
+            IsDeleted = false;
+        }
+
+        private Policy(Guid id, Guid proposalId, IClock clock)
+        {
+            _clock = clock;
+            Id = id;
+            ProposalId = proposalId;
+            PolicyNumber = PolicyNumber.Generate();
+            ContractedAt = _clock.UtcNow;
+            Period = new PolicyPeriod(ContractedAt);
+            Status = PolicyStatus.Active;
+            IsDeleted = false;
+        }
+
+        public static Policy Create(Guid proposalId, ProposalStatusContract proposalStatus, IClock clock)
+        {
+            if (proposalStatus != ProposalStatusContract.Approved)
+                throw new DomainException("Proposta não aprovada não pode ser contratada.");
+
+            return new Policy(Guid.NewGuid(), proposalId, clock);
+        }
+
+        public void Cancel()
         {
             if (Status != PolicyStatus.Active)
-                throw new InvalidOperationException($"Apólice no status {Status} não pode ser cancelada.");
+                throw new DomainException("Apenas apólices ativas podem ser canceladas.");
 
             Status = PolicyStatus.Canceled;
-            // CancellationReason = reason; // se quiser guardar
-
-            // Opcional: Domain Event → PolicyCanceledEvent
         }
 
-        // Outros métodos futuros: Renew(), Endorse(), Suspend(), CalculatePremium()...
-
-        // Geração de número da apólice (exemplo simples; pode vir de um serviço sequencial)
-        private string GeneratePolicyNumber()
+        public void Delete()
         {
-            // Em produção: use um sequence no banco ou serviço distribuído
-            return $"POL-{DateTime.UtcNow:yyyyMMddHHmmss}-{Guid.NewGuid().ToString("N").Substring(0, 8).ToUpper()}";
+            if (IsDeleted)
+                throw new DomainException("Apólice já excluída.");
+
+            IsDeleted = true;
         }
 
-        // Construtor vazio para EF Core (shadow properties, etc.)
-        private Policy() { }
+        public void Restore()
+        {
+            if (!IsDeleted)
+                throw new DomainException("Apólice não está excluída.");
+
+            IsDeleted = false;
+        }
+
     }
 }

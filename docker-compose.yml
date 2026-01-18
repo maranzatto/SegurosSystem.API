@@ -1,13 +1,21 @@
 services:
+  contratacaoservice:
+      image: ${DOCKER_REGISTRY-}contratacaoservice
+      build:
+        context: .
+        dockerfile: ContratacaoService/Dockerfile
+      ports:
+        - "5002:8080"
+      environment:
+        - ProposalService__BaseUrl=http://propostaservice:8080
+      depends_on:
+        - propostaservice
+
   propostaservice:
     image: ${DOCKER_REGISTRY-}propostaservice
     build:
       context: .
       dockerfile: PropostaService/Dockerfile
-
-  contratacaoservice:
-    image: ${DOCKER_REGISTRY-}contratacaoservice
-    build:
-      context: .
-      dockerfile: ContratacaoService/Dockerfile
+    ports:
+      - "5000:8080"
 
