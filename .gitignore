@@ -63,8 +63,9 @@ bld/
 *.nuget.props
 *.nuget.targets
 
-# Docker
+# Docker (apenas overrides locais)
 docker-compose.override.yml
+docker-compose.local.yml
 
 # Rider
 .idea/
@@ -81,3 +82,15 @@ Desktop.ini
 **/appsettings.Development.json
 **/appsettings.Local.json
 **/launchSettings.json
+**/secrets.json
+**/.env
+**/.env.local
+
+# Entity Framework (apenas arquivos temporários)
+**/Migrations/*.Designer.cs
+**/Migrations/*.resx
+
+# Test Results
+TestResults/
+**/*.trx
+**/*.coverage

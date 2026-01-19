@@ -1,0 +1,6 @@
+<Solution>
+  <Project Path="../ContratacaoService/ContratacaoService.csproj" />
+  <Project Path="../PropostaService/PropostaService.csproj" />
+  <Project Path="ContratacaoService.Tests/ContratacaoService.Tests.csproj" />
+  <Project Path="PropostaService.Tests/PropostaService.Tests.csproj" />
+</Solution>
