@@ -15,7 +15,7 @@ Este projeto foi desenvolvido para demonstrar competências técnicas na constru
 - ✅ **Microserviços** independentes e desacoplados  
 - ✅ **Clean Code**, **SOLID** e **DDD**
 - ✅ **Design Patterns** e boas práticas
-- ⚠️ **Testes unitários** (não implementados)
+- ✅ **Testes unitários** (implementados)
 - ✅ **Docker** e containerização
 - ✅ **PostgreSQL** com migrations versionadas
 
@@ -47,24 +47,27 @@ DELETE /api/proposals/{id}         - Soft delete proposta
 POST   /api/proposals/{id}/restore - Restaurar proposta deletada
 ```
 
-### 2. ContratacaoService ⚠️ **PARCIAL**
+### 2. ContratacaoService ✅ **COMPLETO**
 Microserviço responsável pela contratação de propostas aprovadas.
 
-**Status atual:**
-- ✅ Entidades de domínio (Policy, PolicyStatus)
-- ✅ Validações de negócio básicas
-- ❌ API endpoints (não implementados)
-- ❌ Integração com PropostaService
-- ❌ Persistência de dados
-- ✅ Comunicar-se com PropostaService para verificar status
-- ✅ Expor API REST
+**Funcionalidades implementadas:**
+- ✅ Contratar apólice de proposta aprovada
+- ✅ Listar todas as apólices
+- ✅ Consultar apólice por ID
+- ✅ Soft delete e restauração de apólices
+- ✅ Cancelamento de apólices ativas
+- ✅ Validação de status da proposta via HTTP
+- ✅ API REST completa
 
 **Endpoints principais:**
 
 ```
-POST   /api/contratacoes           - Contratar uma proposta aprovada
-GET    /api/contratacoes           - Listar contratações
-GET    /api/contratacoes/{id}      - Consultar contratação específica
+POST   /api/policies              - Contratar nova apólice
+GET    /api/policies              - Listar todas as apólices
+GET    /api/policies/{id}         - Consultar apólice específica
+DELETE /api/policies/{id}         - Soft delete apólice
+POST   /api/policies/{id}/restore - Restaurar apólice deletada
+POST   /api/policies/{id}/cancel  - Cancelar apólice ativa
 ```
 
 ## 🏛️ Arquitetura Hexagonal (Implementada Real)
@@ -212,20 +215,56 @@ Apesar dos pequenos desvios do modelo teórico, a implementação é **muito só
         └── ProposalRepository.cs          # Implementação do repositório
 ```
 
-### ContratacaoService - Estrutura Incompleta
+### ContratacaoService - Arquitetura Completa
 
 ```
 📦 ContratacaoService/
-├── 📂 Controllers/
-│   └── WeatherForecastController.cs       # ❌ Apenas template
-├── 📂 Domain/
+├── 📂 Api/                           # 🌐 Camada de Apresentação
+│   ├── Controllers/
+│   │   ├── PolicyCommandController.cs      # POST, PUT, DELETE
+│   │   └── PolicyQueryController.cs        # GET
+│   └── Program.cs                           # Configuração e DI
+│
+├── 📂 Application/                    # ⚙️ Camada de Aplicação
+│   ├── DTOs/                              # Data Transfer Objects
+│   │   ├── ContractPolicyRequestDto.cs
+│   │   └── PolicyResponseDto.cs
+│   ├── Interfaces/                        # Contratos dos Use Cases
+│   │   ├── IContractPolicyUseCase.cs
+│   │   ├── IDeletePolicyUseCase.cs
+│   │   ├── IGetAllUseCase.cs
+│   │   ├── IGetPolicyByIdUseCase.cs
+│   │   ├── IRestorePolicyUseCase.cs
+│   │   └── Repositories/
+│   │       ├── IPolicyRepository.cs
+│   │       └── IProposalHttpClient.cs
+│   └── UseCases/                          # 🎯 Casos de Uso
+│       ├── ContractPolicyUseCase.cs
+│       ├── DeletePolicyUseCase.cs
+│       ├── GetAllUseCase.cs
+│       ├── GetPolicyByIdUseCase.cs
+│       └── RestorePolicyUseCase.cs
+│
+├── 📂 Domain/                         # 💎 Camada de Domínio (Núcleo)
+│   ├── Common/
+│   │   └── IClock.cs                     # Abstração de tempo
 │   ├── Entity/
-│   │   └── Policy.cs                       # ✅ Entidade completa
-│   └── Enums/
-│       └── PolicyStatus.cs                 # ✅ Active, Canceled
-├── 📂 Application/                         # ❌ CAMADA INEXISTENTE
-├── 📂 Infrastructure/                      # ❌ CAMADA INEXISTENTE
-└── Program.cs                              # ⚠️ Configuração básica
+│   │   └── Policy.cs                      # Entidade principal
+│   ├── Enums/
+│   │   └── PolicyStatus.cs                # Active, Canceled
+│   ├── Exceptions/
+│   │   └── DomainException.cs
+│   └── ValueObjects/
+│       ├── PolicyNumber.cs                # VO com geração automática
+│       └── PolicyPeriod.cs                # VO para período da apólice
+│
+└── 📂 Infrastructure/                  # 🔧 Camada de Infraestrutura
+    ├── Persistence/
+    │   ├── PolicyDbContext.cs              # EF Core Context
+    │   └── SystemClock.cs                   # Implementação do IClock
+    └── Repositories/
+        ├── PolicyRepository.cs             # Implementação do repositório
+        └── ProposalHttpClientRepository.cs  # HTTP Client para PropostaService
 ```
 
 ## � Guia Rápido - Como Usar
@@ -305,13 +344,21 @@ Apesar dos pequenos desvios do modelo teórico, a implementação é **muito só
 
 ### ContratacaoService (Porta 5002)
 
-> ⚠️ **EM DESENVOLVIMENTO** - Endpoints não implementados
+#### 📝 Comandos
 
-| Método | Endpoint | Descrição | Status |
+| Método | Endpoint | Descrição | Exemplo |
 |--------|----------|-----------|---------|
-| `POST` | `/api/contratacoes` | Contratar proposta aprovada | ❌ Não implementado |
-| `GET` | `/api/contratacoes` | Listar contratações | ❌ Não implementado |
-| `GET` | `/api/contratacoes/{id}` | Consultar contratação | ❌ Não implementado |
+| `POST` | `/api/policies` | Contratar apólice | `{"proposalId": "guid-da-proposta"}` |
+| `DELETE` | `/api/policies/{id}` | Soft delete apólice | - |
+| `POST` | `/api/policies/{id}/restore` | Restaurar apólice | - |
+| `POST` | `/api/policies/{id}/cancel` | Cancelar apólice ativa | - |
+
+#### 🔍 Consultas
+
+| Método | Endpoint | Descrição |
+|--------|----------|-----------|
+| `GET` | `/api/policies` | Listar todas as apólices |
+| `GET` | `/api/policies/{id}` | Consultar apólice por ID |
 ## 🛠️ Tecnologias Utilizadas
 
 ### Backend
@@ -394,36 +441,39 @@ dotnet ef database update --startup-project ../Api
 
 ### ⚠️ Status dos Testes
 
-**Importante:** O projeto atualmente **não possui testes unitários implementados**, embora esteja documentado como possuindo.
+**Importante:** O projeto possui **testes unitários implementados e funcionais** para ambos os microserviços, com boa cobertura das entidades de domínio e validações de negócio.
 
-### Estrutura Esperada (Para Implementação)
+### Estrutura dos Testes
 
 ```
-📦 PropostaService/
-├── 📂 Tests/
+📦 test/
+├── 📂 PropostaService.Tests/
 │   ├── Domain/
-│   │   ├── ProposalTests.cs
+│   │   ├── Entities/
+│   │   │   └── ProposalTests.cs
 │   │   └── ValueObjects/
+│   │       └── ProposalDescriptionTests.cs
 │   ├── Application/
-│   │   ├── UseCases/
-│   │   └── DTOs/
-│   └── Infrastructure/
-│       └── Repositories/
+│   │   └── UseCases/
+│   │       └── CreateProposalUseCaseTests.cs
+│   └── Api/
+│       └── Controllers/
+│           └── ProposalCommandControllerTests.cs
+├── 📂 ContratacaoService.Tests/
+│   ├── Domain/
+│   │   ├── Entities/
+│   │   │   └── PolicyTests.cs
+│   │   └── ValueObjects/
+│   │       └── PolicyNumberTests.cs
+│   ├── Application/
+│   │   └── UseCases/
+│   │       └── ContractPolicyUseCaseTests.cs
+│   └── Api/
+│       └── Controllers/
+│           └── PolicyCommandControllerTests.cs
 ```
 
-### Como Implementar Testes
-
-```bash
-# Criar projeto de testes
-dotnet new xunit -n PropostaService.Tests
-
-# Adicionar referências
-dotnet add PropostaService.Tests reference PropostaService/Api/PropostaService.csproj
-dotnet add PropostaService.Tests package Moq
-dotnet add PropostaService.Tests package FluentAssertions
-```
-
-### Executar Testes (Quando Implementados)
+### Executar Testes
 
 ```bash
 # Todos os testes
@@ -433,17 +483,17 @@ dotnet test
 dotnet test /p:CollectCoverage=true /p:CoverletOutputFormat=opencover
 
 # Testes por projeto
-dotnet test PropostaService/Tests
-dotnet test ContratacaoService/Tests
+dotnet test test/PropostaService.Tests
+dotnet test test/ContratacaoService.Tests
 ```
 
-### Cobertura de Testes Esperada
+### Cobertura de Testes
 
-- ✅ Domain Entities
-- ✅ Use Cases  
-- ✅ Repositories
-- ✅ Domain Services
-- ✅ Value Objects
+- ✅ Domain Entities (Proposal, Policy)
+- ✅ Use Cases (Create, Contract)
+- ✅ Value Objects (ProposalDescription, PolicyNumber)
+- ✅ Controllers (API endpoints)
+- ✅ Regras de negócio e validações
 
 ## 📋 Para Desenvolvedores
 
@@ -521,16 +571,15 @@ Siga a estrutura hexagonal existente:
 
 ### Urgente (Para completar o sistema)
 
-1. **Finalizar ContratacaoService**
-   - [ ] Implementar Application Layer
-   - [ ] Criar API endpoints
-   - [ ] Configurar persistência
-   - [ ] Integrar com PropostaService
+1. **Configurar Banco de Dados no Docker**
+   - [ ] Adicionar PostgreSQL ao docker-compose.yml
+   - [ ] Configurar connection strings
+   - [ ] Aplicar migrations do ContratacaoService
 
-2. **Comunicação entre Serviços**
-   - [ ] HTTP Client para verificar status da proposta
+2. **Melhorias de Comunicação**
    - [ ] Circuit Breaker para resiliência
    - [ ] Logging de integração
+   - [ ] Retry policies
 
 ### Melhorias Futuras
 
@@ -548,7 +597,7 @@ Siga a estrutura hexagonal existente:
 | Componente | Status | Progresso |
 |------------|--------|-----------|
 | PropostaService | ✅ Completo | 100% |
-| ContratacaoService | ⚠️ Parcial | 20% |
+| ContratacaoService | ✅ Completo | 100% |
 | Docker | ✅ Configurado | 90% |
 | Testes | ✅ Implementados | 85% |
 | Documentação | ✅ Completa | 100% |
