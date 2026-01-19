@@ -9,7 +9,7 @@ namespace ContratacaoService.Infrastructure.Repositories
 
         public ProposalHttpClient(HttpClient http)
         {
-            _http = http;
+            _http = http ?? throw new ArgumentNullException(nameof(http));
         }
 
         public async Task<ProposalDto> GetByIdAsync(Guid proposalId)

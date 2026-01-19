@@ -10,7 +10,7 @@ namespace ContratacaoService.Application.UseCases
 
         public GetPolicyByIdUseCase(IPolicyRepository policyRepository)
         {
-            _policyRepository = policyRepository;
+            _policyRepository = policyRepository ?? throw new ArgumentNullException(nameof(policyRepository));
         }
 
         public async Task<PolicyResponseDto> ExecuteAsync(Guid id)
@@ -23,6 +23,7 @@ namespace ContratacaoService.Application.UseCases
                 Id = policy.Id,
                 ProposalId = policy.ProposalId,
                 PolicyNumber = policy.PolicyNumber.Value,
+                ProposalName = policy.ProposalName,
                 ContractedAt = policy.ContractedAt,
                 EffectiveDate = policy.Period.Start,
                 ExpirationDate = policy.Period.End,

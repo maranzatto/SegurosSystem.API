@@ -1,14 +1,11 @@
 ﻿using ContratacaoService.Domain.Enums;
 using ContratacaoService.Domain.Common;
-using ContratacaoService.Domain.Events;
 using ContratacaoService.Domain.Exceptions;
-using System;
-using System.Runtime.InteropServices;
 using ContratacaoService.Domain.ValueObjects;
 
 namespace ContratacaoService.Domain.Entities
 {
-    public class Policy : IEntity
+    public class Policy
     {
         private readonly IClock _clock;
 
@@ -16,45 +13,39 @@ namespace ContratacaoService.Domain.Entities
         public Guid ProposalId { get; private set; }
         public PolicyNumber PolicyNumber { get; private set; }
         public PolicyPeriod Period { get; private set; }
+        public string ProposalName { get; set; }
         public DateTime ContractedAt { get; private set; }
         public PolicyStatus Status { get; private set; }
         public bool IsDeleted { get; private set; }
 
-        private readonly List<IDomainEvent> _domainEvents = new();
-        public IReadOnlyCollection<IDomainEvent> DomainEvents => _domainEvents.AsReadOnly();
-        public void AddDomainEvent(IDomainEvent domainEvent)
-        {
-            _domainEvents.Add(domainEvent);
-        }
-        public void ClearDomainEvents()
-        {
-            _domainEvents.Clear();
-        }
-
         private Policy()
         {
             _clock = null!;
+            PolicyNumber = null!;
+            ProposalName = null!;
+            Period = null!;
             IsDeleted = false;
         }
 
-        private Policy(Guid id, Guid proposalId, IClock clock)
+        private Policy(Guid id, Guid proposalId, string proposalName, IClock clock)
         {
             _clock = clock;
             Id = id;
             ProposalId = proposalId;
             PolicyNumber = PolicyNumber.Generate();
+            ProposalName = proposalName;
             ContractedAt = _clock.UtcNow;
             Period = new PolicyPeriod(ContractedAt);
             Status = PolicyStatus.Active;
             IsDeleted = false;
         }
 
-        public static Policy Create(Guid proposalId, ProposalStatusContract proposalStatus, IClock clock)
+        public static Policy Create(Guid proposalId, ProposalStatusContract proposalStatus, string proposalName, IClock clock)
         {
             if (proposalStatus != ProposalStatusContract.Approved)
                 throw new DomainException("Proposta não aprovada não pode ser contratada.");
 
-            return new Policy(Guid.NewGuid(), proposalId, clock);
+            return new Policy(Guid.NewGuid(), proposalId, proposalName, clock);
         }
 
         public void Cancel()

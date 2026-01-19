@@ -11,14 +11,11 @@ namespace ContratacaoService.Application.UseCases
         private readonly IPolicyRepository _policyRepository;
         private readonly IClock _clock;
 
-        public ContractPolicyUseCase(
-            IProposalHttpClient proposalClient,
-            IPolicyRepository policyRepository,
-            IClock clock)
+        public ContractPolicyUseCase(IProposalHttpClient proposalClient, IPolicyRepository policyRepository, IClock clock)
         {
-            _proposalClient = proposalClient;
-            _policyRepository = policyRepository;
-            _clock = clock;
+            _proposalClient = proposalClient ?? throw new ArgumentNullException(nameof(proposalClient));
+            _policyRepository = policyRepository ?? throw new ArgumentNullException(nameof(policyRepository));
+            _clock = clock ?? throw new ArgumentNullException(nameof(clock));
         }
 
         public async Task<Guid> ExecuteAsync(Guid proposalId)
@@ -28,6 +25,7 @@ namespace ContratacaoService.Application.UseCases
             var policy = Policy.Create(
                 proposalId,
                 proposal.Status,
+                proposal.Description,
                 _clock);
 
             await _policyRepository.AddAsync(policy);

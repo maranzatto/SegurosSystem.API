@@ -1,9 +1,8 @@
 ﻿using PropostaService.Domain.Common;
 using PropostaService.Domain.Enums;
-using PropostaService.Domain.Events;
 using PropostaService.Domain.ValueObjects;
 
-public class Proposal : IEntity
+public class Proposal
 {
     private readonly IClock _clock;
 
@@ -14,17 +13,6 @@ public class Proposal : IEntity
     public DateTime UpdatedAt { get; private set; }
     public RejectionReason? RejectionReason { get; private set; }
     public bool IsDeleted { get; private set; } = false;
-
-    private readonly List<IDomainEvent> _domainEvents = new();
-    public IReadOnlyCollection<IDomainEvent> DomainEvents => _domainEvents.AsReadOnly();
-    public void AddDomainEvent(IDomainEvent domainEvent)
-    {
-        _domainEvents.Add(domainEvent);
-    }
-    public void ClearDomainEvents()
-    {
-        _domainEvents.Clear();
-    }
 
     private Proposal()
     {
@@ -68,8 +56,6 @@ public class Proposal : IEntity
 
         Status = ProposalStatus.Approved;
         UpdatedAt = _clock.UtcNow;
-
-        AddDomainEvent(new ProposalApprovedEvent(Id, UpdatedAt));
     }
 
     public void Reject(RejectionReason reason)
@@ -84,7 +70,6 @@ public class Proposal : IEntity
         RejectionReason = reason;
         UpdatedAt = _clock.UtcNow;
 
-        AddDomainEvent(new ProposalRejectedEvent(Id, reason.Value, UpdatedAt));
     }
 
     public void UpdateDescription(ProposalDescription newDescription)
